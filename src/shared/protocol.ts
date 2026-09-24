@@ -36,10 +36,27 @@ export interface PresenceEvent {
 
 export type Ack<T = object> = (result: Result<T>) => void;
 
+export interface CheckoutSession {
+  /** Stripe PaymentIntent client secret. Sent only to the host's socket, never broadcast. */
+  clientSecret: string;
+  amountCents: number;
+}
+
 export interface ClientToServerEvents {
   "cart:open": (payload: OpenPayload, ack: Ack<CartSnapshot>) => void;
   "cart:join": (payload: { name: string }, ack: Ack<CartSnapshot>) => void;
   "cart:action": (action: CartAction, ack: Ack<{ version: number }>) => void;
+  /** Host only. Locks the cart and returns a payment session (or the existing one, after a reload). */
+  "checkout:start": (payload: Record<string, never>, ack: Ack<CheckoutSession>) => void;
+  /** Host only. Unlocks the cart — unless the payment already went through, in which case the order is placed. */
+  "checkout:cancel": (payload: Record<string, never>, ack: Ack) => void;
+  /** Host only, after Stripe confirms on the client. The server re-checks with Stripe before placing the order. */
+  "checkout:complete": (payload: Record<string, never>, ack: Ack) => void;
+}
+
+export interface AppConfig {
+  /** Null when Stripe keys aren't configured on the server. */
+  stripePublishableKey: string | null;
 }
 
 export interface ServerToClientEvents {

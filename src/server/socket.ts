@@ -1,9 +1,11 @@
 import type { Server, Socket } from "socket.io";
 import { z } from "zod";
-import type { ClientToServerEvents, ServerToClientEvents } from "../shared/protocol";
-import type { ActivityEntry } from "../shared/types";
+import type { Ack, ClientToServerEvents, ServerToClientEvents } from "../shared/protocol";
+import type { ActivityEntry, Result } from "../shared/types";
 import { applyAction, joinCart, toPublicCart, type StoredCart } from "./cart/rules";
 import type { CartService } from "./cart/service";
+import { Checkout } from "./checkout";
+import type { Payments } from "./payments";
 
 interface SocketData {
   cartId?: string;
@@ -52,11 +54,12 @@ class Presence {
   }
 }
 
-export function registerSocketHandlers(io: IO, service: CartService): void {
+export function registerSocketHandlers(io: IO, service: CartService, payments: Payments | null): void {
   const presence = new Presence();
 
   const broadcastState = (cart: StoredCart, activity?: ActivityEntry) =>
     io.to(room(cart.id)).emit("cart:state", { cart: toPublicCart(cart), activity });
+  const checkout = new Checkout(service, payments, (result) => broadcastState(result.cart, result.activity));
   const broadcastPresence = (cartId: string) =>
     io.to(room(cartId)).emit("cart:presence", { cartId, online: presence.online(cartId) });
 
@@ -77,7 +80,12 @@ export function registerSocketHandlers(io: IO, service: CartService): void {
       if (!parsed.success) return ack({ ok: false, error: "Invalid request." });
       const cartId = parsed.data.cartId.toUpperCase();
       const cart = await service.get(cartId);
-      if (!cart) return ack({ ok: false, error: "We couldn't find that cart. Check the link?" });
+      if (!cart) {
+        return ack({
+          ok: false,
+          error: "We couldn't find that cart. Check the code — or, since carts in this demo are temporary and clear when the server restarts, start a new order.",
+        });
+      }
 
       leaveCurrentCart(socket);
       const participantId = cart.tokens[parsed.data.token];
@@ -123,6 +131,24 @@ export function registerSocketHandlers(io: IO, service: CartService): void {
       broadcastState(result.cart, result.activity);
       ack({ ok: true, version: result.cart.version });
     });
+
+    // Checkout events: host only (Checkout re-checks), and any Stripe failure becomes an error ack.
+    const checkoutHandler =
+      <T extends object>(run: (cartId: string, participantId: string) => Promise<Result<T>>) =>
+      async (_payload: unknown, ack: Ack<T>) => {
+        const { cartId, participantId } = socket.data;
+        if (!cartId || !participantId) return ack({ ok: false, error: "Join the cart first." });
+        try {
+          ack(await run(cartId, participantId));
+        } catch (err) {
+          console.error(`Checkout error for cart ${cartId}:`, err);
+          ack({ ok: false, error: "Something went wrong talking to Stripe. Try again." });
+        }
+      };
+
+    socket.on("checkout:start", checkoutHandler((cartId, id) => checkout.start(cartId, id)));
+    socket.on("checkout:cancel", checkoutHandler((cartId, id) => checkout.cancel(cartId, id)));
+    socket.on("checkout:complete", checkoutHandler((cartId, id) => checkout.complete(cartId, id)));
 
     socket.on("disconnect", () => leaveCurrentCart(socket));
   });

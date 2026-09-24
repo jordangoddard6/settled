@@ -1,8 +1,8 @@
 // Live connection to one cart. The server is the source of truth: this hook only ever shows
 // snapshots the server sent, and ignores any snapshot older than the one it already has.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
-import type { CartAction, CartSnapshot, ClientToServerEvents, ServerToClientEvents } from "../../shared/protocol";
+import type { CartAction, CartSnapshot, CheckoutSession, ClientToServerEvents, ServerToClientEvents } from "../../shared/protocol";
 import type { ActivityEntry, Cart, Result } from "../../shared/types";
 import { getToken } from "../lib/identity";
 
@@ -22,9 +22,16 @@ export interface CartConnection {
   lastRemoteActivity: ActivityEntry | null;
   join: (name: string) => Promise<Result<object>>;
   act: (action: CartAction) => Promise<Result<object>>;
+  checkout: {
+    start: () => Promise<Result<CheckoutSession>>;
+    cancel: () => Promise<Result<object>>;
+    complete: () => Promise<Result<object>>;
+  };
 }
 
 const ACK_TIMEOUT_MS = 8000;
+/** Checkout calls wait on Stripe, so give them longer. */
+const CHECKOUT_TIMEOUT_MS = 20000;
 
 export function useCart(cartId: string): CartConnection {
   const [cart, setCart] = useState<Cart | null>(null);
@@ -118,5 +125,14 @@ export function useCart(cartId: string): CartConnection {
     [send],
   );
 
-  return { cart, you, online, connection, error, lastRemoteActivity, join, act };
+  const checkout = useMemo(
+    () => ({
+      start: () => send<CheckoutSession>((s) => s.timeout(CHECKOUT_TIMEOUT_MS).emitWithAck("checkout:start", {})),
+      cancel: () => send((s) => s.timeout(CHECKOUT_TIMEOUT_MS).emitWithAck("checkout:cancel", {})),
+      complete: () => send((s) => s.timeout(CHECKOUT_TIMEOUT_MS).emitWithAck("checkout:complete", {})),
+    }),
+    [send],
+  );
+
+  return { cart, you, online, connection, error, lastRemoteActivity, join, act, checkout };
 }

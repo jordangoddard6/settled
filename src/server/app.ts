@@ -6,10 +6,11 @@ import express from "express";
 import { Server } from "socket.io";
 import { z } from "zod";
 import { isRestaurantId } from "../shared/menus";
-import type { CreateCartResponse } from "../shared/protocol";
+import type { AppConfig, CreateCartResponse } from "../shared/protocol";
 import { cleanName } from "./cart/rules";
 import { CartService } from "./cart/service";
 import type { CartStore } from "./cart/store";
+import type { Payments } from "./payments";
 import { registerSocketHandlers, type IO } from "./socket";
 
 const createCartSchema = z.object({ restaurantId: z.string(), name: z.string(), token: z.string().min(8).max(100) });
@@ -20,13 +21,18 @@ export interface App {
   service: CartService;
 }
 
-export function createApp(store: CartStore): App {
+export function createApp(store: CartStore, payments: Payments | null): App {
   const service = new CartService(store);
   const app = express();
   app.use(express.json({ limit: "20kb" }));
 
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true });
+  });
+
+  app.get("/api/config", (_req, res) => {
+    const config: AppConfig = { stripePublishableKey: payments?.publishableKey ?? null };
+    res.json(config);
   });
 
   app.post("/api/carts", async (req, res) => {
@@ -50,7 +56,7 @@ export function createApp(store: CartStore): App {
   // No connection-state recovery: on every (re)connect the client re-opens the cart and receives
   // a full snapshot, so there's a single, simple path back to the correct state.
   const io: IO = new Server(httpServer);
-  registerSocketHandlers(io, service);
+  registerSocketHandlers(io, service, payments);
 
   return { httpServer, io, service };
 }

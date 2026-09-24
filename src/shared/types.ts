@@ -35,6 +35,13 @@ export interface ActivityEntry {
   text: string;
 }
 
+export interface OrderSummary {
+  placedAt: number;
+  subtotalCents: number;
+  taxCents: number;
+  totalCents: number;
+}
+
 /** The cart as every participant sees it. */
 export interface Cart {
   id: string;
@@ -47,6 +54,10 @@ export interface Cart {
   items: LineItem[];
   /** Most recent last, capped at ACTIVITY_LIMIT. */
   activity: ActivityEntry[];
+  /** Set when the host locks the cart to pay; cleared if checkout is cancelled. */
+  checkoutStartedAt: number | null;
+  /** Set once payment is confirmed with Stripe. */
+  order: OrderSummary | null;
   createdAt: number;
   updatedAt: number;
 }

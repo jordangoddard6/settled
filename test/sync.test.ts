@@ -1,98 +1,18 @@
 // End-to-end sync test: real server, real Socket.IO clients, simultaneous changes.
-import type { AddressInfo } from "node:net";
-import { io as connect, type Socket } from "socket.io-client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createApp, type App } from "../src/server/app";
-import { MemoryCartStore } from "../src/server/cart/store";
-import type { CartAction, CartSnapshot, ClientToServerEvents, ServerToClientEvents } from "../src/shared/protocol";
-import type { Cart, Result } from "../src/shared/types";
-
-type ClientSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
-
-/** A minimal stand-in for the React client: keeps the newest snapshot and every version it saw. */
-class TestClient {
-  socket: ClientSocket;
-  cart: Cart | null = null;
-  seenVersions: number[] = [];
-  you: string | null = null;
-
-  constructor(url: string, public token: string) {
-    this.socket = connect(url, { transports: ["websocket"], forceNew: true, reconnection: false });
-    this.socket.on("cart:state", ({ cart }) => this.accept(cart));
-  }
-
-  private accept(cart: Cart) {
-    this.seenVersions.push(cart.version);
-    if (!this.cart || cart.version > this.cart.version) this.cart = cart;
-  }
-
-  async open(cartId: string) {
-    const res = await this.socket.emitWithAck("cart:open", { cartId, token: this.token });
-    this.handleSnapshot(res);
-  }
-
-  async join(name: string) {
-    this.handleSnapshot(await this.socket.emitWithAck("cart:join", { name }));
-  }
-
-  act(action: CartAction) {
-    return this.socket.emitWithAck("cart:action", action);
-  }
-
-  private handleSnapshot(res: Result<CartSnapshot>) {
-    if (!res.ok) throw new Error(res.error);
-    this.you = res.you;
-    if (!this.cart || res.cart.version > this.cart.version) this.cart = res.cart;
-  }
-}
-
-const cookie: CartAction = { type: "addItem", menuItemId: "cookie", quantity: 1, selections: {}, note: "" };
-const fries: CartAction = { type: "addItem", menuItemId: "waffle-fries", quantity: 2, selections: { size: ["large"] }, note: "extra salt" };
-
-async function waitFor(check: () => boolean, timeoutMs = 3000) {
-  const start = Date.now();
-  while (!check()) {
-    if (Date.now() - start > timeoutMs) throw new Error("Timed out waiting for condition");
-    await new Promise((r) => setTimeout(r, 10));
-  }
-}
+import { cookie, fries, startTestServer, waitFor } from "./helpers";
 
 describe("real-time sync across clients", () => {
-  let app: App;
-  let url: string;
-  const clients: TestClient[] = [];
+  let server: Awaited<ReturnType<typeof startTestServer>>;
 
   beforeAll(async () => {
-    app = createApp(new MemoryCartStore());
-    await new Promise<void>((resolve) => app.httpServer.listen(0, resolve));
-    url = `http://localhost:${(app.httpServer.address() as AddressInfo).port}`;
+    server = await startTestServer();
   });
 
-  afterAll(async () => {
-    for (const c of clients) c.socket.disconnect();
-    await app.io.close();
-  });
-
-  async function newCart() {
-    const res = await fetch(`${url}/api/carts`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ restaurantId: "chick-fil-a", name: "Jordan", token: "host-token-123" }),
-    });
-    const body = (await res.json()) as Result<{ cartId: string }>;
-    if (!body.ok) throw new Error(body.error);
-    const host = new TestClient(url, "host-token-123");
-    const guest = new TestClient(url, `guest-token-${Math.random()}`);
-    clients.push(host, guest);
-    await host.open(body.cartId);
-    await guest.open(body.cartId);
-    await guest.join("Alex");
-    await waitFor(() => host.cart?.version === guest.cart?.version);
-    return { cartId: body.cartId, host, guest };
-  }
+  afterAll(() => server.close());
 
   it("two users adding items at the same moment end with identical carts and nothing lost", async () => {
-    const { host, guest } = await newCart();
+    const { host, guest } = await server.newCart();
     const startVersion = host.cart!.version;
 
     // Fire 25 adds from each client without waiting between them.
@@ -118,7 +38,7 @@ describe("real-time sync across clients", () => {
   });
 
   it("conflicting edits resolve the same way for everyone", async () => {
-    const { host, guest } = await newCart();
+    const { host, guest } = await server.newCart();
     await guest.act(cookie);
     await waitFor(() => host.cart?.items.length === 1);
     const lineId = host.cart!.items[0]!.id;
@@ -137,7 +57,7 @@ describe("real-time sync across clients", () => {
   });
 
   it("guests cannot remove other people's items", async () => {
-    const { host, guest } = await newCart();
+    const { host, guest } = await server.newCart();
     await host.act(cookie);
     await waitFor(() => guest.cart?.items.length === 1);
     const res = await guest.act({ type: "removeItem", lineId: guest.cart!.items[0]!.id });
@@ -145,21 +65,20 @@ describe("real-time sync across clients", () => {
   });
 
   it("a client that reconnects gets everything it missed", async () => {
-    const { cartId, host, guest } = await newCart();
+    const { cartId, host, guest } = await server.newCart();
     guest.socket.disconnect();
 
     await host.act(cookie);
     await host.act(fries);
 
-    const returning = new TestClient(url, guest.token);
-    clients.push(returning);
+    const returning = server.client(guest.token);
     await returning.open(cartId);
     expect(returning.you).toBe(guest.you);
     expect(returning.cart).toEqual(host.cart);
   });
 
   it("reports who is online", async () => {
-    const { cartId, host, guest } = await newCart();
+    const { cartId, host, guest } = await server.newCart();
     let online: string[] = [];
     host.socket.on("cart:presence", (e) => {
       if (e.cartId === cartId) online = e.online;

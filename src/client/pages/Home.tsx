@@ -1,10 +1,62 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
-import { LIMITS } from "../../shared/config";
+import { CART_CODE_ALPHABET, CART_CODE_LENGTH, LIMITS } from "../../shared/config";
 import { RESTAURANT_LIST } from "../../shared/menus";
 import type { CreateCartRequest, CreateCartResponse } from "../../shared/protocol";
 import type { RestaurantId } from "../../shared/types";
 import { getSavedName, getToken, saveName } from "../lib/identity";
+
+/** Accepts a bare code ("k7m 2qx") or a pasted link (".../c/K7M2QX"). */
+function parseCartCode(input: string): string | null {
+  const fromLink = input.match(/\/c\/([^/?#\s]+)/i)?.[1];
+  const code = (fromLink ?? input).replace(/[\s-]/g, "").toUpperCase();
+  const valid = code.length === CART_CODE_LENGTH && [...code].every((ch) => CART_CODE_ALPHABET.includes(ch));
+  return valid ? code : null;
+}
+
+function JoinByCode() {
+  const navigate = useNavigate();
+  const [value, setValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  function submit(e: FormEvent) {
+    e.preventDefault();
+    const code = parseCartCode(value);
+    if (!code) return setError(`Cart codes are ${CART_CODE_LENGTH} letters and numbers, like K7M2QX.`);
+    navigate(`/c/${code}`);
+  }
+
+  return (
+    <form onSubmit={submit} className="mt-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-200 sm:p-6">
+      <label htmlFor="cart-code" className="text-sm font-semibold text-stone-700">
+        Have a code? Enter it here
+      </label>
+      <div className="mt-1.5 flex gap-2">
+        <input
+          id="cart-code"
+          value={value}
+          onChange={(e) => {
+            setValue(e.target.value);
+            setError(null);
+          }}
+          autoCapitalize="characters"
+          autoComplete="off"
+          spellCheck={false}
+          placeholder="K7M2QX"
+          className="min-w-0 flex-1 rounded-xl border border-stone-300 px-4 py-3 font-mono text-base tracking-widest uppercase outline-none placeholder:tracking-widest focus:border-brand focus:ring-2 focus:ring-brand/20"
+        />
+        <button type="submit" className="rounded-xl bg-stone-900 px-5 py-3 font-semibold text-white">
+          Join
+        </button>
+      </div>
+      {error && (
+        <p role="alert" className="mt-2 text-sm text-red-700">
+          {error}
+        </p>
+      )}
+    </form>
+  );
+}
 
 export default function Home() {
   const navigate = useNavigate();
@@ -103,6 +155,8 @@ export default function Home() {
             </p>
           )}
         </section>
+
+        <JoinByCode />
 
         <p className="mt-6 text-center text-xs text-stone-400">
           Sample menus with approximate prices. Not affiliated with any restaurant.

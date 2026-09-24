@@ -4,7 +4,7 @@
 import { randomInt } from "node:crypto";
 import { CART_CODE_ALPHABET, CART_CODE_LENGTH } from "../../shared/config";
 import type { RestaurantId } from "../../shared/types";
-import { createCart, type RuleResult, type StoredCart } from "./rules";
+import { createCart, type PendingPayment, type RuleResult, type StoredCart } from "./rules";
 import type { CartStore } from "./store";
 
 export class CartService {
@@ -42,6 +42,19 @@ export class CartService {
       this.schedulePersist(result.cart);
     }
     return result;
+  }
+
+  /**
+   * Records the Stripe payment for a checkout. Not a visible change, so no version bump or broadcast.
+   * Returns false if that checkout is no longer in progress (e.g. the host cancelled meanwhile).
+   */
+  attachPayment(id: string, checkoutStartedAt: number, payment: PendingPayment): boolean {
+    const cart = this.active.get(id);
+    if (!cart || cart.status !== "locked" || cart.checkoutStartedAt !== checkoutStartedAt || cart.payment) return false;
+    const next = { ...cart, payment };
+    this.active.set(id, next);
+    this.schedulePersist(next);
+    return true;
   }
 
   /** Resolves once every pending save has finished. Used by tests and graceful shutdown. */

@@ -3,13 +3,22 @@
 import { randomUUID } from "node:crypto";
 import { ACTIVITY_LIMIT, LIMITS } from "../../shared/config";
 import { findMenuItem, RESTAURANTS } from "../../shared/menus";
-import { normalizeSelections, unitPriceCents } from "../../shared/pricing";
+import { computeTotals, normalizeSelections, unitPriceCents } from "../../shared/pricing";
 import type { CartAction } from "../../shared/protocol";
 import type { ActivityEntry, Cart, LineItem, Participant, RestaurantId } from "../../shared/types";
 
-/** The cart as stored on the server: the public cart plus the secret token -> participant map. */
+export interface PendingPayment {
+  intentId: string;
+  clientSecret: string;
+  amountCents: number;
+}
+
+/** The cart as stored on the server: the public cart plus secrets that are never broadcast. */
 export interface StoredCart extends Cart {
+  /** Secret token -> participant ID. */
   tokens: Record<string, string>;
+  /** The Stripe PaymentIntent for the current checkout, if one has been created. */
+  payment: PendingPayment | null;
 }
 
 export type RuleResult =
@@ -19,7 +28,7 @@ export type RuleResult =
 const fail = (error: string): RuleResult => ({ ok: false, error });
 
 export function toPublicCart(cart: StoredCart): Cart {
-  const { tokens: _tokens, ...publicCart } = cart;
+  const { tokens: _tokens, payment: _payment, ...publicCart } = cart;
   return publicCart;
 }
 
@@ -57,7 +66,10 @@ export function createCart(opts: {
     participants: [host],
     items: [],
     activity: [{ id: randomUUID(), at: opts.now, actorId: host.id, text: `${host.name} started a ${RESTAURANTS[opts.restaurantId].name} order` }],
+    checkoutStartedAt: null,
+    order: null,
     tokens: { [opts.token]: host.id },
+    payment: null,
     createdAt: opts.now,
     updatedAt: opts.now,
   };
@@ -172,4 +184,45 @@ export function applyAction(cart: StoredCart, actorId: string, action: CartActio
     default:
       return fail("Unknown action.");
   }
+}
+
+function requireHost(cart: StoredCart, actorId: string): Participant | string {
+  const actor = cart.participants.find((p) => p.id === actorId);
+  if (!actor) return "Join the cart first.";
+  if (!actor.isHost) return "Only the host can check out.";
+  return actor;
+}
+
+/** Host locks the cart so nothing changes while they pay. */
+export function startCheckout(cart: StoredCart, actorId: string, now: number): RuleResult {
+  const host = requireHost(cart, actorId);
+  if (typeof host === "string") return fail(host);
+  if (cart.status !== "open") return fail(cart.status === "locked" ? "Checkout is already in progress." : "This order has already been placed.");
+  if (cart.items.length === 0) return fail("Add at least one item before checking out.");
+  return commit(cart, host.id, `${host.name} is checking out — the cart is locked`, now, (draft) => {
+    draft.status = "locked";
+    draft.checkoutStartedAt = now;
+  });
+}
+
+/** Host unlocks the cart. The caller must first make sure the payment didn't already succeed. */
+export function cancelCheckout(cart: StoredCart, actorId: string, now: number): RuleResult {
+  const host = requireHost(cart, actorId);
+  if (typeof host === "string") return fail(host);
+  if (cart.status !== "locked") return fail("Checkout isn't in progress.");
+  return commit(cart, host.id, `${host.name} cancelled checkout — the cart is unlocked`, now, (draft) => {
+    draft.status = "open";
+    draft.checkoutStartedAt = null;
+    draft.payment = null;
+  });
+}
+
+/** Marks a locked cart as ordered. Only call after the payment is verified with Stripe. */
+export function placeOrder(cart: StoredCart, now: number): RuleResult {
+  if (cart.status !== "locked") return fail(cart.status === "ordered" ? "This order has already been placed." : "Checkout isn't in progress.");
+  const totals = computeTotals(cart.items);
+  return commit(cart, cart.hostId, `Order sent to ${RESTAURANTS[cart.restaurantId].name} 🎉`, now, (draft) => {
+    draft.status = "ordered";
+    draft.order = { placedAt: now, ...totals };
+  });
 }
