@@ -17,6 +17,11 @@ export function getConfig(): Promise<AppConfig> {
 
 /** Stripe.js, loaded once and only when checkout needs it. Resolves null if payments aren't configured. */
 export function getStripe(): Promise<Stripe | null> {
-  stripePromise ??= getConfig().then((c) => (c.stripePublishableKey ? loadStripe(c.stripePublishableKey) : null));
+  stripePromise ??= getConfig().then((c) =>
+    c.stripePublishableKey
+      ? // Hide Stripe's test-mode developer panel (the "stripe >" button) so testers only see our UI.
+        loadStripe(c.stripePublishableKey, { developerTools: { assistant: { enabled: false } } })
+      : null,
+  );
   return stripePromise;
 }
