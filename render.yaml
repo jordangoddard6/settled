@@ -1,0 +1,17 @@
+# Render Blueprint: one free web service that serves the React app and the Socket.IO server.
+# Render → New → Blueprint → pick this repo. It will ask for the two Stripe TEST keys.
+services:
+  - type: web
+    name: settled
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false

@@ -4,6 +4,9 @@
   "private": true,
   "description": "Real-time group food ordering MVP",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "concurrently -k -n server,client -c blue,magenta \"npm:dev:server\" \"npm:dev:client\"",
     "dev:server": "tsx watch src/server/index.ts --port 3001",
