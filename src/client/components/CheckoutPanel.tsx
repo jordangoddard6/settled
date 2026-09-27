@@ -181,7 +181,13 @@ function PayForm({ amountCents, complete, onError }: { amountCents: number; comp
 
   return (
     <form onSubmit={pay} className="space-y-3">
-      <PaymentElement />
+      {/* Card form only: Link's bank/Klarna options and wallets would confuse the test instructions. */}
+      <PaymentElement
+        options={{
+          layout: { type: "accordion", defaultCollapsed: false },
+          wallets: { link: "never", applePay: "never", googlePay: "never" },
+        }}
+      />
       {message && (
         <p role="alert" className="text-sm text-red-700">
           {message}
