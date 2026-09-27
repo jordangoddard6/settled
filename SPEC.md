@@ -90,8 +90,8 @@ per cart. All input is validated on the server. No rate limiting (known limitati
 1. The shared cart: create/join, add/remove, live sync, reconnect, two-user test. ✅
 2. Checkout: join-by-code box, lock/cancel, Stripe Payment Element, server verification,
    "Order sent" + receipt. ✅ *(needs Stripe test keys to try)*
-3. Deploy to Render and test on two real devices. *(GitHub repo + Render account)*
-4. Wrap-up: README with setup, deploy steps and known limitations.
+3. Deploy to Render and test on two real devices. ✅ Live at https://settled-bcn8.onrender.com
+4. Wrap-up: README with setup, deploy steps and known limitations. ✅
 
 Cut from the MVP: options screen, activity feed, "I'm done" toggles, auto-unlock timeout, cart
 expiry, Neon storage, on-site "How to test" notes (instructions go to the tester directly).
