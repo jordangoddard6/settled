@@ -5,6 +5,9 @@ one cart — live, on every device. See [SPEC.md](SPEC.md) for the full MVP spec
 
 **Live demo:** https://settled-bcn8.onrender.com (may take up to a minute to wake up)
 
+**New to the team?** Start with the [Engineering Playbook](https://jordangoddard6.github.io/settled/):
+stack, process, Git rules, AI guardrails, and your day-1 checklist.
+
 ## Run locally
 
 Requires Node 22+.
@@ -59,10 +62,14 @@ Carts live in server memory, so they reset whenever the service restarts, redepl
 
 ## Scripts
 
-| Command             | What it does                                  |
-| ------------------- | --------------------------------------------- |
-| `npm run dev`       | Server (with reload) + Vite dev server        |
-| `npm test`          | Unit tests + two-client real-time sync test   |
-| `npm run typecheck` | TypeScript check                              |
-| `npm run build`     | Build the client into `dist/client`           |
-| `npm start`         | Production server (serves the built client)   |
+| Command             | What it does                                                   |
+| ------------------- | -------------------------------------------------------------- |
+| `npm run dev`       | Server (with reload) + Vite dev server                         |
+| `npm run check`     | Lint + format check + typecheck + Vitest (what CI runs)        |
+| `npm test`          | Vitest: unit, integration (real sockets) and API tests         |
+| `npm run test:e2e`  | Playwright: two real browsers sharing a cart (builds + serves) |
+| `npm run lint:fix`  | ESLint with auto-fix                                           |
+| `npm run format`    | Prettier on the whole repo                                     |
+| `npm run typecheck` | TypeScript check                                               |
+| `npm run build`     | Build the client into `dist/client`                            |
+| `npm start`         | Production server (serves the built client)                    |

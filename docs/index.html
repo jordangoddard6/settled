@@ -1,0 +1,1277 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Settled Engineering Playbook</title>
+    <meta
+      name="description"
+      content="Everything a new Settled engineer needs: our stack, tools, process, controls, and how to ship your first PR."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍽️</text></svg>"
+    />
+    <style>
+      :root {
+        --bg: #f7f7f5;
+        --surface: #ffffff;
+        --surface-2: #f1f0ec;
+        --text: #1c1917;
+        --muted: #57534e;
+        --faint: #a8a29e;
+        --border: #e7e5e4;
+        --brand: #0f766e;
+        --brand-soft: #ccfbf1;
+        --brand-ink: #115e59;
+        --code-bg: #1c1917;
+        --code-text: #f5f5f4;
+        --warn-bg: #fef3c7;
+        --warn-ink: #92400e;
+        --ok: #15803d;
+        --radius: 14px;
+        --sidebar: 280px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #121110;
+          --surface: #1c1a18;
+          --surface-2: #262320;
+          --text: #f5f5f4;
+          --muted: #c4bfba;
+          --faint: #78716c;
+          --border: #34302c;
+          --brand: #2dd4bf;
+          --brand-soft: #134e4a;
+          --brand-ink: #99f6e4;
+          --code-bg: #0b0a09;
+          --warn-bg: #3b2a0b;
+          --warn-ink: #fcd34d;
+          --ok: #4ade80;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 24px;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          16px/1.65 Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+      }
+      a {
+        color: var(--brand);
+        text-underline-offset: 2px;
+      }
+      code,
+      pre,
+      kbd {
+        font-family: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+        font-size: 0.88em;
+      }
+      :not(pre) > code {
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0.1em 0.35em;
+        word-break: break-word;
+      }
+      pre {
+        background: var(--code-bg);
+        color: var(--code-text);
+        border-radius: 10px;
+        padding: 14px 16px;
+        overflow-x: auto;
+        line-height: 1.5;
+        margin: 12px 0 18px;
+      }
+      pre .c {
+        color: #a8a29e;
+      }
+
+      /* Layout */
+      .layout {
+        display: grid;
+        grid-template-columns: var(--sidebar) minmax(0, 1fr);
+        min-height: 100vh;
+      }
+      nav.sidebar {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+        padding: 28px 18px;
+        border-right: 1px solid var(--border);
+        background: var(--surface);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 800;
+        font-size: 1.15rem;
+        margin-bottom: 4px;
+      }
+      .brand-sub {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin: 0 0 22px;
+      }
+      nav.sidebar ol {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        counter-reset: none;
+      }
+      nav.sidebar li a {
+        display: flex;
+        gap: 10px;
+        align-items: baseline;
+        padding: 7px 10px;
+        border-radius: 8px;
+        color: var(--text);
+        text-decoration: none;
+        font-size: 0.93rem;
+      }
+      nav.sidebar li a:hover {
+        background: var(--surface-2);
+      }
+      nav.sidebar li a.active {
+        background: var(--brand-soft);
+        color: var(--brand-ink);
+        font-weight: 600;
+      }
+      nav.sidebar .num {
+        color: var(--faint);
+        font-variant-numeric: tabular-nums;
+        min-width: 1.4em;
+        font-size: 0.85em;
+      }
+      nav.sidebar a.active .num {
+        color: inherit;
+      }
+      .nav-label {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--faint);
+        margin: 18px 10px 6px;
+        font-weight: 700;
+      }
+
+      main {
+        padding: 40px clamp(16px, 5vw, 64px) 96px;
+        max-width: 980px;
+      }
+      header.hero h1 {
+        font-size: clamp(1.9rem, 4vw, 2.6rem);
+        line-height: 1.15;
+        margin: 0 0 10px;
+        letter-spacing: -0.02em;
+      }
+      header.hero p.lede {
+        color: var(--muted);
+        font-size: 1.1rem;
+        margin: 0 0 18px;
+        max-width: 62ch;
+      }
+      .meta {
+        color: var(--faint);
+        font-size: 0.85rem;
+      }
+
+      .links {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        gap: 10px;
+        margin: 24px 0 8px;
+      }
+      .links a {
+        display: block;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px 14px;
+        text-decoration: none;
+        color: var(--text);
+      }
+      .links a:hover {
+        border-color: var(--brand);
+      }
+      .links strong {
+        display: block;
+        font-size: 0.95rem;
+      }
+      .links span {
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      section.area {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: clamp(18px, 3vw, 30px);
+        margin-top: 28px;
+      }
+      section.area > h2 {
+        margin: 0 0 6px;
+        font-size: 1.5rem;
+        letter-spacing: -0.01em;
+        display: flex;
+        gap: 12px;
+        align-items: baseline;
+        flex-wrap: wrap;
+      }
+      .area-num {
+        color: var(--brand);
+        font-variant-numeric: tabular-nums;
+      }
+      .summary {
+        color: var(--muted);
+        margin: 0 0 18px;
+      }
+      h3 {
+        font-size: 1.08rem;
+        margin: 26px 0 8px;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        padding: 3px 9px;
+        border-radius: 999px;
+        background: var(--brand-soft);
+        color: var(--brand-ink);
+        white-space: nowrap;
+      }
+      .chip::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--ok);
+      }
+      .callout {
+        background: var(--warn-bg);
+        color: var(--warn-ink);
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin: 14px 0;
+        font-size: 0.94rem;
+      }
+      .callout strong {
+        color: inherit;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 10px 0 16px;
+        font-size: 0.93rem;
+      }
+      .table-wrap {
+        overflow-x: auto;
+      }
+      th,
+      td {
+        text-align: left;
+        vertical-align: top;
+        padding: 9px 10px;
+        border-bottom: 1px solid var(--border);
+      }
+      th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--muted);
+        background: var(--surface-2);
+      }
+      ul.check {
+        list-style: none;
+        padding-left: 0;
+      }
+      ul.check li {
+        padding-left: 28px;
+        position: relative;
+        margin: 6px 0;
+      }
+      ul.check li::before {
+        content: "☐";
+        position: absolute;
+        left: 4px;
+        color: var(--brand);
+      }
+      .flow {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin: 12px 0 18px;
+        font-size: 0.9rem;
+      }
+      .flow span.step {
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 5px 12px;
+        font-weight: 600;
+      }
+      .flow span.arrow {
+        color: var(--faint);
+      }
+      footer {
+        color: var(--faint);
+        font-size: 0.85rem;
+        margin-top: 40px;
+      }
+
+      /* Mobile */
+      .mobile-nav {
+        display: none;
+      }
+      @media (max-width: 900px) {
+        .layout {
+          display: block;
+        }
+        nav.sidebar {
+          display: none;
+        }
+        .mobile-nav {
+          display: block;
+          position: sticky;
+          top: 0;
+          z-index: 10;
+          background: var(--surface);
+          border-bottom: 1px solid var(--border);
+          padding: 10px 16px;
+        }
+        .mobile-nav select {
+          width: 100%;
+          font: inherit;
+          padding: 8px 10px;
+          border-radius: 8px;
+          border: 1px solid var(--border);
+          background: var(--surface);
+          color: var(--text);
+        }
+        main {
+          padding-top: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mobile-nav">
+      <label for="jump" class="nav-label" style="display: block; margin: 0 0 4px">Settled Engineering Playbook</label>
+      <select id="jump" aria-label="Jump to section"></select>
+    </div>
+
+    <div class="layout">
+      <nav class="sidebar" aria-label="Playbook sections">
+        <div class="brand"><span aria-hidden="true">🍽️</span> Settled</div>
+        <p class="brand-sub">Engineering Playbook</p>
+        <ol id="toc">
+          <li><a href="#start"><span class="num">→</span>Start here</a></li>
+          <li class="nav-label">The 9 areas</li>
+          <li><a href="#language"><span class="num">1</span>Language selection</a></li>
+          <li><a href="#ide"><span class="num">2</span>IDE selection &amp; setup</a></li>
+          <li><a href="#process"><span class="num">3</span>Development strategy</a></li>
+          <li><a href="#git"><span class="num">4</span>Git strategy &amp; controls</a></li>
+          <li><a href="#issues"><span class="num">5</span>Issue tracking</a></li>
+          <li><a href="#ai"><span class="num">6</span>AI agents &amp; controls</a></li>
+          <li><a href="#quality"><span class="num">7</span>Code quality</a></li>
+          <li><a href="#testing"><span class="num">8</span>Testing frameworks</a></li>
+          <li><a href="#other"><span class="num">9</span>Other controls &amp; infrastructure</a></li>
+        </ol>
+      </nav>
+
+      <main>
+        <header class="hero" id="start">
+          <h1>Welcome to Settled 👋</h1>
+          <p class="lede">
+            Settled is real-time group food ordering: one person starts an order, friends join by link, QR or code,
+            everyone adds their own items to a cart that updates live on every phone, and the host pays once. This
+            playbook is everything you need to go from zero to your first merged pull request.
+          </p>
+          <p class="meta">
+            Maintained by Jordan Goddard (founder · tech lead · Product Owner) · Last updated October 2026 · Questions?
+            Ask in standup or open an issue labeled <code>question</code>.
+          </p>
+
+          <div class="links">
+            <a href="https://github.com/jordangoddard6/settled"><strong>Repository</strong><span>GitHub · code &amp; PRs</span></a>
+            <a href="https://github.com/users/jordangoddard6/projects/1"><strong>Issue board</strong><span>GitHub Projects · backlog</span></a>
+            <a href="https://settled-bcn8.onrender.com"><strong>Live app</strong><span>Render · may take ~1 min to wake</span></a>
+            <a href="https://github.com/jordangoddard6/settled/actions"><strong>CI runs</strong><span>GitHub Actions</span></a>
+            <a href="https://github.com/jordangoddard6/settled/security"><strong>Security</strong><span>Dependabot · CodeQL · secrets</span></a>
+            <a href="https://github.com/jordangoddard6/settled/blob/main/CLAUDE.md"><strong>AI rules file</strong><span>CLAUDE.md</span></a>
+          </div>
+
+          <h3>Your first hour</h3>
+          <pre><code><span class="c"># 1. Prerequisites: Node 22+, Git, VS Code (see section 2)</span>
+git clone https://github.com/jordangoddard6/settled.git
+cd settled
+npm ci                       <span class="c"># installs deps and the git pre-commit hook</span>
+cp .env.example .env         <span class="c"># add Stripe TEST keys (Jordan shares them; see section 9)</span>
+npm run dev                  <span class="c"># app at http://localhost:5173, API at :3001</span>
+npm run check                <span class="c"># lint + format + typecheck + tests: should all pass</span></code></pre>
+          <p>
+            Then open <code>http://localhost:5173</code> in one browser and the same cart link at
+            <code>http://127.0.0.1:5173</code> in another: they're separate identities, so you can watch the cart sync
+            between two people on one machine.
+          </p>
+        </header>
+
+        <!-- 1 -->
+        <section class="area" id="language">
+          <h2><span class="area-num">1</span>Language selection <span class="chip">In use</span></h2>
+          <p class="summary">One language, end to end: <strong>TypeScript 6 in strict mode</strong>.</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Layer</th>
+                  <th>What we use</th>
+                  <th>Lives in</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Front end</td>
+                  <td>TypeScript · React 19 · Vite 8 · Tailwind CSS 4</td>
+                  <td><code>src/client/</code></td>
+                </tr>
+                <tr>
+                  <td>Back end</td>
+                  <td>TypeScript · Node.js 22 · Express 5 · Socket.IO 4 · Zod (input validation)</td>
+                  <td><code>src/server/</code></td>
+                </tr>
+                <tr>
+                  <td>Shared</td>
+                  <td>Types, menus, pricing and the socket protocol, imported by both sides</td>
+                  <td><code>src/shared/</code></td>
+                </tr>
+                <tr>
+                  <td>Payments</td>
+                  <td>Stripe (test mode) via <code>stripe</code> + <code>@stripe/react-stripe-js</code></td>
+                  <td><code>src/server/payments.ts</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Why TypeScript everywhere</h3>
+          <ul>
+            <li>
+              <strong>The real-time contract is typed once.</strong> <code>src/shared/protocol.ts</code> defines every
+              Socket.IO event. If the server changes a payload, the client stops compiling: no silent "cart didn't
+              update" bugs.
+            </li>
+            <li>
+              <strong>One language, one toolchain.</strong> Anyone can work on any layer, and lint/format/test config is
+              shared.
+            </li>
+            <li>
+              <strong>First-class ecosystem.</strong> React, Socket.IO, Stripe and Zod all ship TypeScript types, and AI
+              coding tools are strongest in TS.
+            </li>
+            <li><strong>Hiring.</strong> TypeScript/React is the most common skill set for web startups.</li>
+          </ul>
+          <div class="callout">
+            <strong>Why TypeScript 6, not 7?</strong> TypeScript 7 (the native Go compiler) doesn't expose the
+            JavaScript API that <code>typescript-eslint</code> needs for type-aware linting, so we pin
+            <code>typescript@^6.0.3</code>. We'll upgrade when typescript-eslint supports 7.
+          </div>
+        </section>
+
+        <!-- 2 -->
+        <section class="area" id="ide">
+          <h2><span class="area-num">2</span>IDE selection &amp; setup <span class="chip">Configured in repo</span></h2>
+          <p class="summary">
+            <strong>Recommended: Visual Studio Code.</strong> Any IDE is allowed: formatting, linting and tests are
+            enforced by the pre-commit hook and CI, not by your editor.
+          </p>
+          <h3>Install</h3>
+          <ol>
+            <li>
+              <strong>VS Code</strong>: <a href="https://code.visualstudio.com/download">code.visualstudio.com/download</a>
+            </li>
+            <li>
+              <strong>Node.js 22 LTS or newer</strong>: <a href="https://nodejs.org/en/download">nodejs.org/en/download</a>
+              (check with <code>node -v</code>)
+            </li>
+            <li><strong>Git</strong>: <a href="https://git-scm.com/downloads">git-scm.com/downloads</a></li>
+          </ol>
+          <h3>Set up (about 5 minutes)</h3>
+          <ol>
+            <li>Clone the repo and run <code>npm ci</code> (see <a href="#start">Start here</a>).</li>
+            <li>
+              Open the folder in VS Code. When prompted <em>"Do you want to install the recommended extensions?"</em>,
+              click <strong>Install</strong>. The list comes from
+              <a href="https://github.com/jordangoddard6/settled/blob/main/.vscode/extensions.json"><code>.vscode/extensions.json</code></a>.
+            </li>
+            <li>
+              When prompted to use the workspace TypeScript version, click <strong>Allow</strong> so the editor matches
+              CI.
+            </li>
+            <li>
+              Sign in to <strong>GitHub Copilot</strong> and <strong>Claude Code</strong> (see <a href="#ai">section 6</a>).
+            </li>
+          </ol>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Extension</th>
+                  <th>Why</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>ESLint · Prettier</td>
+                  <td>Inline lint errors; format on save; ESLint fixes on save (<code>.vscode/settings.json</code>)</td>
+                </tr>
+                <tr>
+                  <td>Tailwind CSS IntelliSense</td>
+                  <td>Class autocomplete and previews</td>
+                </tr>
+                <tr>
+                  <td>Vitest · Playwright Test</td>
+                  <td>Run and debug individual tests from the editor</td>
+                </tr>
+                <tr>
+                  <td>Claude Code · GitHub Copilot (+ Chat)</td>
+                  <td>Our two approved AI tools</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            <strong>Using another IDE</strong> (WebStorm, Zed, etc.)? Turn on its ESLint and Prettier integrations, point
+            it at the workspace TypeScript in <code>node_modules/typescript</code>, and use LF line endings.
+          </p>
+        </section>
+
+        <!-- 3 -->
+        <section class="area" id="process">
+          <h2><span class="area-num">3</span>Development strategy <span class="chip">Scrum · 1-week sprints</span></h2>
+          <p class="summary">
+            We run <strong>Scrum with 1-week sprints</strong>. Short sprints keep the "no changes mid-sprint" rule cheap:
+            what we learn from users on Monday can be planned the following Monday.
+          </p>
+          <h3>Roles</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Role</th>
+                  <th>Who</th>
+                  <th>Owns</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Product Owner</td>
+                  <td>Jordan</td>
+                  <td>The backlog and its priority order; sprint goal; accepting work in review</td>
+                </tr>
+                <tr>
+                  <td>Scrum Master</td>
+                  <td><strong>Rotates each sprint</strong> among engineers (you take it in your 2nd or 3rd sprint)</td>
+                  <td>Runs the meetings, keeps the board honest, removes blockers, protects the sprint</td>
+                </tr>
+                <tr>
+                  <td>Development Team</td>
+                  <td>All engineers (Jordan included)</td>
+                  <td>Estimating, building, testing and shipping the sprint's issues</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>The week</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>When</th>
+                  <th>Meeting</th>
+                  <th>Length</th>
+                  <th>Output</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Monday 9:30</td>
+                  <td>Sprint planning</td>
+                  <td>45 min</td>
+                  <td>Sprint goal; issues pulled from To Do into the new Iteration; each estimated in points</td>
+                </tr>
+                <tr>
+                  <td>Tue–Fri 9:30</td>
+                  <td>Daily standup</td>
+                  <td>15 min</td>
+                  <td>Yesterday / today / blockers, walking the board right to left</td>
+                </tr>
+                <tr>
+                  <td>Thursday 2:00</td>
+                  <td>Backlog grooming</td>
+                  <td>30 min</td>
+                  <td>Top of the backlog is "Ready": clear, estimated, has acceptance criteria</td>
+                </tr>
+                <tr>
+                  <td>Friday 2:00</td>
+                  <td>Sprint review</td>
+                  <td>30 min</td>
+                  <td>Demo what shipped (on the live app); PO accepts or returns work</td>
+                </tr>
+                <tr>
+                  <td>Friday 2:30</td>
+                  <td>Retrospective</td>
+                  <td>30 min</td>
+                  <td>One or two process changes, filed as <code>chore</code> issues</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Working agreements</h3>
+          <ul>
+            <li>
+              <strong>Estimates</strong> use story points (1, 2, 3, 5, 8). Anything bigger than 8 gets split in
+              grooming.
+            </li>
+            <li>
+              <strong>Definition of Ready:</strong> a user-facing goal, acceptance criteria, an estimate, and no open
+              questions.
+            </li>
+            <li>
+              <strong>Definition of Done:</strong> merged to <code>main</code> through a reviewed PR, CI green, tests
+              added, deployed to Render, issue closed.
+            </li>
+            <li>
+              <strong>No mid-sprint scope changes</strong>, except Sev 1/2 production incidents (see
+              <a href="#oncall">on-call</a>). New ideas go to the Backlog for Monday.
+            </li>
+          </ul>
+        </section>
+
+        <!-- 4 -->
+        <section class="area" id="git">
+          <h2><span class="area-num">4</span>Git strategy &amp; controls <span class="chip">Enforced on main</span></h2>
+          <p class="summary">
+            We use <strong>GitHub Flow</strong>: <code>main</code> is always deployable, and every change goes through a
+            short-lived branch and a pull request. Merging to <code>main</code> deploys to production.
+          </p>
+          <div class="flow" aria-label="GitHub Flow">
+            <span class="step">Branch off main</span><span class="arrow">→</span><span class="step">Commit &amp; push</span
+            ><span class="arrow">→</span><span class="step">Open PR</span><span class="arrow">→</span
+            ><span class="step">CI + 1 review</span><span class="arrow">→</span><span class="step">Squash-merge</span
+            ><span class="arrow">→</span><span class="step">Render deploys</span>
+          </div>
+          <h3>Branch names</h3>
+          <p>
+            <code>&lt;type&gt;/&lt;issue#&gt;-&lt;short-description&gt;</code>, where type is <code>feat</code>,
+            <code>fix</code>, <code>chore</code>, <code>docs</code> or <code>test</code>. Examples:
+            <code>feat/14-split-bill</code>, <code>fix/22-checkout-lock</code>. Keep branches short-lived (merge within a
+            sprint) and delete them after merging (GitHub does this automatically).
+          </p>
+          <pre><code>git switch main &amp;&amp; git pull
+git switch -c feat/14-split-bill
+<span class="c"># ...work, commit (the pre-commit hook lints and formats staged files)...</span>
+git push -u origin feat/14-split-bill
+gh pr create --fill          <span class="c"># or open the PR on GitHub; fill in the template</span></code></pre>
+          <h3>Commit messages (guideline)</h3>
+          <ul>
+            <li>Imperative subject, 72 characters or fewer: <em>"Add per-person subtotals to the receipt"</em>, not <em>"added stuff"</em>.</li>
+            <li>Reference the issue in the subject or body (<code>#14</code>).</li>
+            <li>Use the body to explain <em>why</em>, not what. The diff shows what.</li>
+            <li>Mark AI-assisted commits with a <code>Co-Authored-By:</code> trailer for the tool you used.</li>
+          </ul>
+          <p>
+            PRs are <strong>squash-merged</strong>, so the PR title becomes the commit on <code>main</code>. Write PR
+            titles to the same standard.
+          </p>
+          <h3>Review &amp; approval controls on <code>main</code></h3>
+          <p>Enforced by a GitHub repository ruleset (Settings → Rules → Rulesets → <em>main</em>):</p>
+          <ul>
+            <li>Changes only via pull request; no direct pushes.</li>
+            <li><strong>1 approving review</strong> from someone other than the author; new pushes dismiss stale approvals.</li>
+            <li>
+              <strong>Required status checks:</strong> <em>Lint, typecheck, unit tests, audit</em> and
+              <em>End-to-end (Playwright)</em> must pass, and the branch must be up to date with <code>main</code>.
+            </li>
+            <li>No force-pushes, no deleting <code>main</code>.</li>
+            <li>
+              <strong>Bypass:</strong> only the repository admin (Jordan), for emergencies. Every bypass is recorded in
+              GitHub's rule insights.
+            </li>
+          </ul>
+          <p>
+            Every PR uses the
+            <a href="https://github.com/jordangoddard6/settled/blob/main/.github/pull_request_template.md">PR template</a>:
+            linked issue, how you tested it, and whether AI was used.
+          </p>
+        </section>
+
+        <!-- 5 -->
+        <section class="area" id="issues">
+          <h2><span class="area-num">5</span>Issue tracking <span class="chip">Live board</span></h2>
+          <p class="summary">
+            All work is tracked as <strong>GitHub Issues</strong> on our
+            <a href="https://github.com/users/jordangoddard6/projects/1"><strong>GitHub Projects board</strong></a>, next to the code, so PRs link to
+            issues automatically.
+          </p>
+          <h3>Columns (the Status field)</h3>
+          <div class="flow" aria-label="Board columns">
+            <span class="step">Backlog</span><span class="arrow">→</span><span class="step">To Do</span
+            ><span class="arrow">→</span><span class="step">In Progress</span><span class="arrow">→</span
+            ><span class="step">Blocked</span><span class="arrow">→</span><span class="step">Peer Review</span
+            ><span class="arrow">→</span><span class="step">Done</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Column</th>
+                  <th>Means</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Backlog</td>
+                  <td>Ideas and requests, ordered by the PO. Not yet ready.</td>
+                </tr>
+                <tr>
+                  <td>To Do</td>
+                  <td>Ready (meets Definition of Ready), in the current sprint's Iteration</td>
+                </tr>
+                <tr>
+                  <td>In Progress</td>
+                  <td>Someone's actively on it. Limit: 2 per person.</td>
+                </tr>
+                <tr>
+                  <td>Blocked</td>
+                  <td>Waiting on someone or something. Say what in a comment and raise it at standup.</td>
+                </tr>
+                <tr>
+                  <td>Peer Review</td>
+                  <td>PR open and waiting for review</td>
+                </tr>
+                <tr>
+                  <td>Done</td>
+                  <td>Merged and deployed. Merging a PR with <code>Closes #N</code> closes the issue and moves it here automatically.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Fields &amp; labels</h3>
+          <ul>
+            <li><strong>Sprint</strong> (1-week Iteration field): which sprint the issue is in.</li>
+            <li><strong>Estimate</strong>: story points.</li>
+            <li>
+              <strong>Labels:</strong> <code>feature</code>, <code>bug</code>, <code>chore</code>, <code>incident</code>,
+              <code>good first issue</code>.
+            </li>
+          </ul>
+          <p>
+            <strong>Your first issue:</strong> filter the board by <code>label:"good first issue"</code>, assign yourself,
+            and bring it to Monday planning.
+          </p>
+        </section>
+
+        <!-- 6 -->
+        <section class="area" id="ai">
+          <h2><span class="area-num">6</span>AI agents &amp; controls <span class="chip">Rules file + enforced limits</span></h2>
+          <p class="summary">
+            AI makes a small team fast, and it also makes mistakes confidently. We use it heavily inside clear limits:
+            <strong>agents propose, humans review and commit.</strong>
+          </p>
+          <h3>Approved tools</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tool</th>
+                  <th>Use it for</th>
+                  <th>Setup</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Claude Code</strong></td>
+                  <td>Planning, implementing, testing, debugging and reviewing: all agent roles below</td>
+                  <td>
+                    <a href="https://claude.com/claude-code">claude.com/claude-code</a> (terminal, VS Code extension or desktop
+                    app); sign in with the team account
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>GitHub Copilot</strong></td>
+                  <td>Inline autocomplete and quick chat in the editor</td>
+                  <td>
+                    VS Code extension; in your
+                    <a href="https://github.com/settings/copilot">Copilot settings</a> set
+                    <em>Suggestions matching public code</em> to <strong>Blocked</strong>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            <strong>Anything else (ChatGPT, Cursor, other assistants) isn't approved for Settled code.</strong> Ask the
+            tech lead if you want to propose a new tool.
+          </p>
+          <h3>The rules file</h3>
+          <p>
+            Every agent reads <a href="https://github.com/jordangoddard6/settled/blob/main/CLAUDE.md"><code>CLAUDE.md</code></a>
+            (Copilot reads
+            <a href="https://github.com/jordangoddard6/settled/blob/main/.github/copilot-instructions.md"><code>.github/copilot-instructions.md</code></a>,
+            which points to the same rules). It covers the architecture, commands, conventions and guardrails. When a
+            convention changes, update the rules file in the same PR.
+          </p>
+          <h3>Agent roles: right model for the job</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Role</th>
+                  <th>When</th>
+                  <th>Model tier</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Inspect &amp; plan</td>
+                  <td>Start of every issue: read the issue and code, write a plan before any code</td>
+                  <td>Top (Claude Opus)</td>
+                </tr>
+                <tr>
+                  <td>Implement</td>
+                  <td>Build the agreed plan</td>
+                  <td>Mid (Claude Sonnet) · Copilot inline</td>
+                </tr>
+                <tr>
+                  <td>Test &amp; verify</td>
+                  <td>Before every commit: run <code>npm run check</code>, add missing tests</td>
+                  <td>Mid / small (Sonnet, Haiku)</td>
+                </tr>
+                <tr>
+                  <td>Bug diagnosis &amp; fix</td>
+                  <td>Reproduce from logs or steps; write a failing test first</td>
+                  <td>Mid (Sonnet)</td>
+                </tr>
+                <tr>
+                  <td>Code review &amp; security</td>
+                  <td>Before opening a PR: run <code>/code-review</code> and <code>/security-review</code> in Claude Code</td>
+                  <td>Top (Claude Opus)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Guardrails</h3>
+          <ol>
+            <li>
+              <strong>You own every line.</strong> Read and understand all AI-written code before committing. "The AI
+              wrote it" is never a review answer.
+            </li>
+            <li>
+              <strong>Agents never commit, push, or change GitHub/Render settings.</strong> Enforced for Claude Code by
+              the shared
+              <a href="https://github.com/jordangoddard6/settled/blob/main/.claude/settings.json"><code>.claude/settings.json</code></a>,
+              which denies <code>git commit</code>, <code>git push</code> and reading or editing <code>.env</code>.
+            </li>
+            <li>
+              <strong>No secrets or customer data in prompts.</strong> Never paste keys, <code>.env</code> contents, or
+              real user data into any AI tool.
+            </li>
+            <li><strong>Stripe test keys only</strong>, and the server refuses live keys by design.</li>
+            <li>
+              <strong>Don't weaken controls</strong> (lint rules, tests, CI, branch rules) to make AI output pass. Fix
+              the code.
+            </li>
+            <li><strong>Disclose it.</strong> Tick the AI-usage box in the PR template.</li>
+          </ol>
+        </section>
+
+        <!-- 7 -->
+        <section class="area" id="quality">
+          <h2><span class="area-num">7</span>Code quality <span class="chip">Hook + CI + Security tab</span></h2>
+          <p class="summary">
+            Quality checks run three times: <strong>in your editor</strong> (on save), <strong>at commit</strong>
+            (husky pre-commit hook), and <strong>in CI</strong> (required to merge).
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tool</th>
+                  <th>Config</th>
+                  <th>What it does</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>ESLint 10</strong></td>
+                  <td><code>eslint.config.js</code></td>
+                  <td>
+                    <code>typescript-eslint</code> <em>recommended-type-checked</em> (catches unhandled promises, unsafe
+                    <code>any</code>, …) + React Hooks rules + React Refresh;
+                    <code>eslint-config-prettier</code> last so formatting is left to Prettier
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Prettier 3</strong></td>
+                  <td><code>.prettierrc.json</code></td>
+                  <td>All formatting (120-character lines). Never argue about style in review.</td>
+                </tr>
+                <tr>
+                  <td><strong>husky + lint-staged</strong></td>
+                  <td><code>.husky/pre-commit</code>, <code>package.json</code></td>
+                  <td>On every commit: <code>eslint --fix</code> + <code>prettier --write</code> on staged files only</td>
+                </tr>
+                <tr>
+                  <td><strong>TypeScript</strong></td>
+                  <td><code>tsconfig.json</code></td>
+                  <td><code>strict</code>, <code>noUncheckedIndexedAccess</code>, no unused locals or params</td>
+                </tr>
+                <tr>
+                  <td><strong>GitHub Actions CI</strong></td>
+                  <td><code>.github/workflows/ci.yml</code></td>
+                  <td>Lint, format check, typecheck, Vitest, <code>npm audit</code>, Playwright on every PR and push to main</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Vulnerability scanning</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Scanner</th>
+                  <th>Catches</th>
+                  <th>Where you see it</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Dependabot</strong> (<code>.github/dependabot.yml</code>)</td>
+                  <td>Known-vulnerable dependencies; opens weekly grouped update PRs (Mondays)</td>
+                  <td>Security tab · PRs</td>
+                </tr>
+                <tr>
+                  <td><strong>CodeQL</strong> (default setup)</td>
+                  <td>Injection, XSS, unsafe data flows in our own code</td>
+                  <td>PR checks · Security tab</td>
+                </tr>
+                <tr>
+                  <td><strong>Secret scanning + push protection</strong></td>
+                  <td>Blocks a push that contains a Stripe key or other credential</td>
+                  <td>Your <code>git push</code> is rejected with instructions</td>
+                </tr>
+                <tr>
+                  <td><strong><code>npm audit --audit-level=high</code></strong></td>
+                  <td>High or critical advisories in the dependency tree</td>
+                  <td>Fails the CI job</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Commands</h3>
+          <pre><code>npm run check        <span class="c"># everything CI checks except E2E: run before pushing</span>
+npm run lint:fix     <span class="c"># auto-fix lint issues</span>
+npm run format       <span class="c"># format the whole repo</span></code></pre>
+          <p>
+            Never disable a rule inline (<code>// eslint-disable</code>, <code>@ts-ignore</code>) without the tech lead's
+            OK in the PR.
+          </p>
+        </section>
+
+        <!-- 8 -->
+        <section class="area" id="testing">
+          <h2><span class="area-num">8</span>Testing frameworks <span class="chip">Runs in CI</span></h2>
+          <p class="summary">
+            <strong>Vitest</strong> for unit, integration and API tests; <strong>Playwright</strong> for end-to-end tests
+            in real browsers. Both run on every PR and must pass to merge.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Tool</th>
+                  <th>Where</th>
+                  <th>Example in our code</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Unit</td>
+                  <td>Vitest</td>
+                  <td><code>test/rules.test.ts</code></td>
+                  <td>Guests can't remove others' items; tax is 8.45% of the subtotal; prices come from the menu</td>
+                </tr>
+                <tr>
+                  <td>Integration</td>
+                  <td>Vitest + real server + Socket.IO clients</td>
+                  <td><code>test/sync.test.ts</code></td>
+                  <td>50 simultaneous adds from two clients: both end identical and see every version once, in order</td>
+                </tr>
+                <tr>
+                  <td>API</td>
+                  <td>Vitest + fake Stripe gateway</td>
+                  <td><code>test/checkout.test.ts</code></td>
+                  <td>Order isn't placed until Stripe confirms; a wrong amount is rejected; cancel unlocks the cart</td>
+                </tr>
+                <tr>
+                  <td>End-to-end</td>
+                  <td>Playwright (Chromium)</td>
+                  <td><code>e2e/group-order.spec.ts</code></td>
+                  <td>Two separate browsers create and join an order and see each other's items live</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>How testing fits the workflow</h3>
+          <ul>
+            <li>
+              <strong>New cart behavior</strong> → a pure function in <code>src/server/cart/rules.ts</code> plus unit
+              tests.
+            </li>
+            <li>
+              <strong>Anything users see change in real time</strong> → an integration test in the
+              <code>sync.test.ts</code> style.
+            </li>
+            <li><strong>Bugs</strong> → write a failing test that reproduces it first, then fix.</li>
+            <li><strong>New user flows</strong> → extend the Playwright spec.</li>
+            <li>
+              <strong>Payments</strong> → tested against the fake gateway in CI. Real Stripe test-mode payments are
+              checked by hand (card <code>4242 4242 4242 4242</code>; decline: <code>4000 0000 0000 0002</code>).
+            </li>
+          </ul>
+          <pre><code>npm test                  <span class="c"># Vitest: unit + integration + API (about 2 s)</span>
+npm run test:e2e          <span class="c"># Playwright: builds, starts the server, runs two browsers</span>
+npx playwright install chromium   <span class="c"># first time only</span></code></pre>
+          <p>We define what to test; AI can help write the tests. You still review every assertion.</p>
+        </section>
+
+        <!-- 9 -->
+        <section class="area" id="other">
+          <h2><span class="area-num">9</span>Other controls, tools &amp; infrastructure</h2>
+          <p class="summary">Hosting, deploys, secrets, your day-1 checklist, and what to do when production breaks.</p>
+
+          <h3 id="infra">Infrastructure &amp; hosting</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>What</th>
+                  <th>Where</th>
+                  <th>How it's created</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>App (React + API + Socket.IO)</td>
+                  <td>Render web service (free plan, Node 22, one instance)</td>
+                  <td>
+                    Scripted: <a href="https://github.com/jordangoddard6/settled/blob/main/render.yaml"><code>render.yaml</code></a>
+                    Blueprint (infrastructure as code)
+                  </td>
+                </tr>
+                <tr>
+                  <td>Payments</td>
+                  <td>Stripe, test mode only</td>
+                  <td>Keys from the Stripe dashboard → Render environment variables</td>
+                </tr>
+                <tr>
+                  <td>This playbook</td>
+                  <td>GitHub Pages</td>
+                  <td>The <code>docs/</code> folder on <code>main</code></td>
+                </tr>
+                <tr>
+                  <td>Cart data</td>
+                  <td>Server memory</td>
+                  <td>Resets on restart, deploy or sleep (known MVP limitation)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Free Render services sleep after 15 idle minutes, so the first request afterward takes about a minute. Health
+            check: <a href="https://settled-bcn8.onrender.com/api/health"><code>/api/health</code></a>.
+          </p>
+
+          <h3>Deploys &amp; rollbacks</h3>
+          <ol>
+            <li>Merging a PR to <code>main</code> triggers an automatic Render deploy (3–5 minutes).</li>
+            <li>
+              Watch it in Render → <em>settled</em> → <strong>Events</strong>. When it says <em>Live</em>, open the app
+              and run a two-browser smoke test (create, join, add, see it sync).
+            </li>
+            <li>If an auto-deploy doesn't start, use <strong>Manual Deploy → Deploy latest commit</strong>.</li>
+            <li>
+              <strong>Rollback:</strong> Render → Events → pick the last good deploy → <strong>Rollback</strong>. Then
+              fix forward with a normal PR (or <code>git revert</code> the bad merge).
+            </li>
+          </ol>
+
+          <h3>Secrets</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Secret</th>
+                  <th>Local dev</th>
+                  <th>Production</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>STRIPE_SECRET_KEY</code> (<code>sk_test_…</code>)</td>
+                  <td><code>.env</code> (git-ignored)</td>
+                  <td>Render → Environment</td>
+                </tr>
+                <tr>
+                  <td><code>STRIPE_PUBLISHABLE_KEY</code> (<code>pk_test_…</code>)</td>
+                  <td><code>.env</code></td>
+                  <td>Render → Environment (served to the browser by <code>/api/config</code>)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <ul>
+            <li>Never commit secrets. <code>.env</code> is git-ignored, and GitHub push protection blocks keys that slip through.</li>
+            <li>Test keys only. The server refuses to start payments with live keys.</li>
+            <li>Get keys from Jordan over a private channel, never in an issue, PR, commit or AI prompt.</li>
+            <li>
+              <strong>If a key leaks:</strong> tell Jordan right away → Stripe dashboard → Developers → API keys →
+              <strong>Roll key</strong> → update <code>.env</code> and Render → redeploy → file an
+              <code>incident</code> issue.
+            </li>
+          </ul>
+
+          <h3>Day-1 onboarding checklist</h3>
+          <ul class="check">
+            <li>GitHub: accept the invite to <code>jordangoddard6/settled</code> (Write access) and the Projects board</li>
+            <li>Render: accept the workspace invite (view deploys and logs)</li>
+            <li>Stripe: accept the test-mode team invite</li>
+            <li>Install Node 22+, Git, VS Code and the recommended extensions (<a href="#ide">section 2</a>)</li>
+            <li>Clone, <code>npm ci</code>, set up <code>.env</code>, then <code>npm run dev</code> and <code>npm run check</code> (<a href="#start">Start here</a>)</li>
+            <li>Read <code>README.md</code>, <code>SPEC.md</code> and <code>CLAUDE.md</code></li>
+            <li>Set up Claude Code and Copilot with the guardrail settings (<a href="#ai">section 6</a>)</li>
+            <li>Make a test order on the live app with two devices</li>
+            <li>Pick a <code>good first issue</code>, open your first PR, and get it reviewed and merged this week</li>
+          </ul>
+
+          <h3 id="oncall">On-call &amp; incidents</h3>
+          <p>
+            One engineer is <strong>on call each week</strong> (Monday 9am to Monday 9am, rotation set at sprint planning),
+            with Jordan as backup. On call means you watch for problems and respond within the times below during waking
+            hours.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Severity</th>
+                  <th>Example</th>
+                  <th>Respond within</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Sev 1</strong></td>
+                  <td>App down; carts not syncing; checkout broken for everyone</td>
+                  <td>30 minutes; drop sprint work</td>
+                </tr>
+                <tr>
+                  <td><strong>Sev 2</strong></td>
+                  <td>A key feature broken for some users (e.g. QR join fails on iOS)</td>
+                  <td>4 hours</td>
+                </tr>
+                <tr>
+                  <td><strong>Sev 3</strong></td>
+                  <td>Cosmetic or minor bug with a workaround</td>
+                  <td>Next sprint planning</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <ol>
+            <li><strong>Confirm:</strong> reproduce it, check <code>/api/health</code>, Render logs, and the last deploy time.</li>
+            <li><strong>Mitigate first:</strong> if the last deploy caused it, roll back in Render. Diagnose after.</li>
+            <li><strong>Communicate:</strong> post status in the team channel when you start and when it's resolved.</li>
+            <li>
+              <strong>Write it up</strong> within 48 hours: an issue labeled <code>incident</code> covering what happened,
+              impact, root cause, and the follow-up issues. Blameless.
+            </li>
+          </ol>
+
+          <h3>Known limitations</h3>
+          <p>
+            Carts live in memory, the host role is tied to a browser, there's no bill splitting yet, and more. See the
+            <a href="https://github.com/jordangoddard6/settled#known-limitations-mvp">README's known-limitations list</a>.
+            Most of them are already on the board.
+          </p>
+        </section>
+
+        <footer>
+          Settled Engineering Playbook · source:
+          <a href="https://github.com/jordangoddard6/settled/tree/main/docs"><code>docs/index.html</code></a> · Improve it with
+          a PR like any other change.
+        </footer>
+      </main>
+    </div>
+
+    <script>
+      // Highlight the current section in the sidebar, and power the mobile section picker.
+      (function () {
+        var links = Array.prototype.slice.call(document.querySelectorAll("#toc a"));
+        var select = document.getElementById("jump");
+        links.forEach(function (a) {
+          var opt = document.createElement("option");
+          opt.value = a.getAttribute("href");
+          opt.textContent = a.textContent.replace(/^→/, "").replace(/^(\d)/, "$1. ");
+          select.appendChild(opt);
+        });
+        select.addEventListener("change", function () {
+          location.hash = select.value;
+        });
+        var sections = links
+          .map(function (a) {
+            return document.querySelector(a.getAttribute("href"));
+          })
+          .filter(Boolean);
+        if (!("IntersectionObserver" in window)) return;
+        var observer = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (e) {
+              if (!e.isIntersecting) return;
+              var id = "#" + e.target.id;
+              links.forEach(function (a) {
+                a.classList.toggle("active", a.getAttribute("href") === id);
+              });
+              select.value = id;
+            });
+          },
+          { rootMargin: "-20% 0px -70% 0px" },
+        );
+        sections.forEach(function (s) {
+          observer.observe(s);
+        });
+      })();
+    </script>
+  </body>
+</html>
