@@ -17,7 +17,11 @@ export function SharePanel({ cartId, restaurantName }: { cartId: string; restaur
 
   async function share() {
     try {
-      await navigator.share({ title: `Join my ${restaurantName} order`, text: `Add what you want to our ${restaurantName} order:`, url });
+      await navigator.share({
+        title: `Join my ${restaurantName} order`,
+        text: `Add what you want to our ${restaurantName} order:`,
+        url,
+      });
     } catch {
       // User closed the share sheet.
     }

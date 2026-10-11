@@ -13,7 +13,10 @@ export class CartService {
   private dirty = new Map<string, StoredCart>();
   private saving = new Set<string>();
 
-  constructor(private store: CartStore, private now: () => number = Date.now) {}
+  constructor(
+    private store: CartStore,
+    private now: () => number = Date.now,
+  ) {}
 
   async get(id: string): Promise<StoredCart | null> {
     await this.ensureLoaded(id);

@@ -9,7 +9,9 @@ const STYLES: Record<ConnectionState, { label: string; dot: string; text: string
 export function ConnectionPill({ state }: { state: ConnectionState }) {
   const s = STYLES[state];
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold ring-1 ring-stone-200 ${s.text}`}>
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold ring-1 ring-stone-200 ${s.text}`}
+    >
       <span className={`h-2 w-2 rounded-full ${s.dot}`} />
       {s.label}
     </span>

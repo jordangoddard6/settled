@@ -77,7 +77,9 @@ function StartCheckout({ cart, checkout, onError }: Pick<Props, "cart" | "checko
         {pending ? <Spinner /> : `Check out · ${formatCents(totalCents)}`}
       </button>
       <p className="mt-2 text-center text-xs text-stone-500">
-        {empty ? "Add items to check out." : "You'll pay for the whole order. Checking out locks the cart for everyone."}
+        {empty
+          ? "Add items to check out."
+          : "You'll pay for the whole order. Checking out locks the cart for everyone."}
       </p>
     </div>
   );
@@ -92,24 +94,33 @@ function HostPayment({ accent, checkout, onError }: Pick<Props, "accent" | "chec
 
   useEffect(() => {
     let cancelled = false;
-    setLoadError(null);
-    Promise.all([checkout.start(), getStripe()]).then(([res, stripeInstance]) => {
-      if (cancelled) return;
-      setStripe(stripeInstance);
-      if (res.ok) setSession({ clientSecret: res.clientSecret, amountCents: res.amountCents });
-      else setLoadError(res.error);
-    });
+    Promise.all([checkout.start(), getStripe()])
+      .then(([res, stripeInstance]) => {
+        if (cancelled) return;
+        setStripe(stripeInstance);
+        if (res.ok) setSession({ clientSecret: res.clientSecret, amountCents: res.amountCents });
+        else setLoadError(res.error);
+      })
+      .catch(() => {
+        // e.g. Stripe.js failed to load (network, ad blocker).
+        if (!cancelled) setLoadError("Couldn't load the secure payment form. Check your connection and try again.");
+      });
     return () => {
       cancelled = true;
     };
   }, [checkout, attempt]);
+
+  function retry() {
+    setLoadError(null);
+    setAttempt((n) => n + 1);
+  }
 
   let body;
   if (loadError) {
     body = (
       <div className="space-y-2">
         <p className="text-sm text-red-700">{loadError}</p>
-        <button onClick={() => setAttempt((n) => n + 1)} className="text-sm font-semibold underline">
+        <button onClick={retry} className="text-sm font-semibold underline">
           Try again
         </button>
       </div>
@@ -121,13 +132,18 @@ function HostPayment({ accent, checkout, onError }: Pick<Props, "accent" | "chec
       </p>
     );
   } else if (stripe === null) {
-    body = <p className="text-sm text-red-700">Payments aren't set up on this server yet (missing Stripe test keys).</p>;
+    body = (
+      <p className="text-sm text-red-700">Payments aren't set up on this server yet (missing Stripe test keys).</p>
+    );
   } else {
     body = (
       <Elements
         key={session.clientSecret}
         stripe={stripe}
-        options={{ clientSecret: session.clientSecret, appearance: { theme: "stripe", variables: { colorPrimary: accent, borderRadius: "10px" } } }}
+        options={{
+          clientSecret: session.clientSecret,
+          appearance: { theme: "stripe", variables: { colorPrimary: accent, borderRadius: "10px" } },
+        }}
       >
         <PayForm amountCents={session.amountCents} complete={checkout.complete} onError={onError} />
       </Elements>
@@ -141,7 +157,8 @@ function HostPayment({ accent, checkout, onError }: Pick<Props, "accent" | "chec
         <span className="text-xs font-semibold tracking-wide text-amber-700 uppercase">Test mode</span>
       </div>
       <p className="text-xs text-stone-500">
-        No real charges. Use card <span className="font-mono">4242 4242 4242 4242</span>, any future date, any CVC and ZIP.
+        No real charges. Use card <span className="font-mono">4242 4242 4242 4242</span>, any future date, any CVC and
+        ZIP.
       </p>
       {body}
       <CancelButton cancel={checkout.cancel} onError={onError} />
@@ -149,7 +166,15 @@ function HostPayment({ accent, checkout, onError }: Pick<Props, "accent" | "chec
   );
 }
 
-function PayForm({ amountCents, complete, onError }: { amountCents: number; complete: () => Promise<Result<object>>; onError: (m: string) => void }) {
+function PayForm({
+  amountCents,
+  complete,
+  onError,
+}: {
+  amountCents: number;
+  complete: () => Promise<Result<object>>;
+  onError: (m: string) => void;
+}) {
   const stripe = useStripe();
   const elements = useElements();
   const [paying, setPaying] = useState(false);

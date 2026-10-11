@@ -15,7 +15,10 @@ export class TestClient {
   seenVersions: number[] = [];
   you: string | null = null;
 
-  constructor(url: string, public token: string) {
+  constructor(
+    url: string,
+    public token: string,
+  ) {
     this.socket = connect(url, { transports: ["websocket"], forceNew: true, reconnection: false });
     this.socket.on("cart:state", ({ cart }) => this.accept(cart));
   }
@@ -46,7 +49,13 @@ export class TestClient {
 }
 
 export const cookie: CartAction = { type: "addItem", menuItemId: "cookie", quantity: 1, selections: {}, note: "" };
-export const fries: CartAction = { type: "addItem", menuItemId: "waffle-fries", quantity: 2, selections: { size: ["large"] }, note: "extra salt" };
+export const fries: CartAction = {
+  type: "addItem",
+  menuItemId: "waffle-fries",
+  quantity: 2,
+  selections: { size: ["large"] },
+  note: "extra salt",
+};
 
 export async function waitFor(check: () => boolean, timeoutMs = 3000) {
   const start = Date.now();

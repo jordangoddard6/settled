@@ -115,7 +115,8 @@ export class Checkout {
   private async finalize(cartId: string, intent: IntentInfo): Promise<Result<object>> {
     const result = await this.service.mutate(cartId, (cart, now) => {
       if (cart.status === "ordered") return { ok: false, error: "already-ordered" };
-      if (cart.payment?.intentId !== intent.id) return { ok: false, error: "That payment doesn't belong to this checkout." };
+      if (cart.payment?.intentId !== intent.id)
+        return { ok: false, error: "That payment doesn't belong to this checkout." };
       const expected = computeTotals(cart.items).totalCents;
       if (intent.status !== "succeeded" || intent.amountCents !== expected || cart.payment.amountCents !== expected) {
         return { ok: false, error: "The payment didn't match the order total." };

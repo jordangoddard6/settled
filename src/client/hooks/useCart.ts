@@ -2,7 +2,13 @@
 // snapshots the server sent, and ignores any snapshot older than the one it already has.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
-import type { CartAction, CartSnapshot, CheckoutSession, ClientToServerEvents, ServerToClientEvents } from "../../shared/protocol";
+import type {
+  CartAction,
+  CartSnapshot,
+  CheckoutSession,
+  ClientToServerEvents,
+  ServerToClientEvents,
+} from "../../shared/protocol";
 import type { ActivityEntry, Cart, Result } from "../../shared/types";
 import { getToken } from "../lib/identity";
 
@@ -97,7 +103,7 @@ export function useCart(cartId: string): CartConnection {
     };
   }, [cartId, applySnapshot, applyYou]);
 
-  const send = useCallback(async <T,>(fn: (s: ClientSocket) => Promise<Result<T>>): Promise<Result<T>> => {
+  const send = useCallback(async <T>(fn: (s: ClientSocket) => Promise<Result<T>>): Promise<Result<T>> => {
     const socket = socketRef.current;
     // Don't let Socket.IO buffer changes while offline — they'd replay unexpectedly later.
     if (!socket?.connected) return { ok: false, error: "You're offline — reconnecting…" };

@@ -1,6 +1,14 @@
 import type { Participant } from "../../shared/types";
 
-export function People({ participants, online, you }: { participants: Participant[]; online: string[]; you: string | null }) {
+export function People({
+  participants,
+  online,
+  you,
+}: {
+  participants: Participant[];
+  online: string[];
+  you: string | null;
+}) {
   const onlineSet = new Set(online);
   return (
     <ul className="flex flex-wrap gap-2" aria-label="People in this order">

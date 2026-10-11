@@ -10,8 +10,9 @@ import { JoinCard } from "../components/JoinCard";
 import { MenuPanel } from "../components/MenuPanel";
 import { People } from "../components/People";
 import { SharePanel } from "../components/SharePanel";
-import { ToastStack, useToasts } from "../components/Toasts";
+import { ToastStack } from "../components/Toasts";
 import { useCart } from "../hooks/useCart";
+import { useToasts } from "../hooks/useToasts";
 
 export default function CartPage() {
   const cartId = (useParams().cartId ?? "").toUpperCase();
@@ -25,9 +26,12 @@ export default function CartPage() {
   }, [lastRemoteActivity, push]);
 
   // On phones, jump to the cart tab when checkout starts so everyone sees why it's locked.
-  useEffect(() => {
+  // (Adjusting state during render on a change, as React recommends, rather than in an effect.)
+  const [prevStatus, setPrevStatus] = useState(status);
+  if (status !== prevStatus) {
+    setPrevStatus(status);
     if (status === "locked") setTab("cart");
-  }, [status]);
+  }
 
   if (error) {
     return (
@@ -96,7 +100,12 @@ export default function CartPage() {
       ) : (
         <main className="mx-auto max-w-6xl space-y-4 px-4 pt-4">
           {!joined && host && (
-            <JoinCard hostName={host.name} restaurantName={restaurant.name} locked={cart.status === "locked"} onJoin={join} />
+            <JoinCard
+              hostName={host.name}
+              restaurantName={restaurant.name}
+              locked={cart.status === "locked"}
+              onJoin={join}
+            />
           )}
           <SharePanel cartId={cart.id} restaurantName={restaurant.name} />
           <People participants={cart.participants} online={online} you={you} />
@@ -121,7 +130,9 @@ export default function CartPage() {
               <MenuPanel restaurant={restaurant} disabledReason={disabledReason} act={act} onError={onError} />
             </div>
             <aside className={`min-w-0 lg:sticky lg:top-4 lg:self-start ${tab === "cart" ? "" : "hidden lg:block"}`}>
-              <h2 className="mb-2 hidden text-sm font-bold tracking-wide text-stone-500 uppercase lg:block">Group cart</h2>
+              <h2 className="mb-2 hidden text-sm font-bold tracking-wide text-stone-500 uppercase lg:block">
+                Group cart
+              </h2>
               <div className="space-y-4">
                 <CartPanel cart={cart} you={you} act={act} onError={onError} />
                 <CheckoutPanel cart={cart} you={you} accent={restaurant.accent} checkout={checkout} onError={onError} />

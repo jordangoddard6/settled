@@ -32,7 +32,9 @@ export function JoinCard({ hostName, restaurantName, locked, onJoin }: Props) {
         {hostName} invited you to a {restaurantName} order
       </h2>
       <p className="mt-1 text-sm text-stone-600">
-        {locked ? "The host is checking out right now, so you can watch but not add items." : "Enter your name to add your own items."}
+        {locked
+          ? "The host is checking out right now, so you can watch but not add items."
+          : "Enter your name to add your own items."}
       </p>
       <div className="mt-4 flex gap-2">
         <input

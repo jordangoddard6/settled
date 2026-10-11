@@ -137,7 +137,8 @@ function LineRow({
     if (!res.ok) onError(res.error);
   }
 
-  const stepBtn = "grid h-8 w-8 place-items-center rounded-full ring-1 ring-stone-300 text-lg leading-none disabled:opacity-30";
+  const stepBtn =
+    "grid h-8 w-8 place-items-center rounded-full ring-1 ring-stone-300 text-lg leading-none disabled:opacity-30";
 
   return (
     <li className={`flex items-start gap-3 px-4 py-3 ${highlight ? "animate-arrive" : ""}`}>
@@ -163,7 +164,9 @@ function LineRow({
                 >
                   −
                 </button>
-                <span className="w-6 text-center font-semibold tabular-nums">{pending === "qty" ? <Spinner /> : line.quantity}</span>
+                <span className="w-6 text-center font-semibold tabular-nums">
+                  {pending === "qty" ? <Spinner /> : line.quantity}
+                </span>
                 <button
                   className={stepBtn}
                   aria-label="Increase quantity"

@@ -23,7 +23,7 @@ function JoinByCode() {
     e.preventDefault();
     const code = parseCartCode(value);
     if (!code) return setError(`Cart codes are ${CART_CODE_LENGTH} letters and numbers, like K7M2QX.`);
-    navigate(`/c/${code}`);
+    void navigate(`/c/${code}`);
   }
 
   return (
@@ -83,7 +83,7 @@ export default function Home() {
       const data = (await res.json()) as CreateCartResponse;
       if (!data.ok) throw new Error(data.error);
       saveName(trimmed);
-      navigate(`/c/${data.cartId}`);
+      void navigate(`/c/${data.cartId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't start the order. Try again?");
       setCreating(null);

@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { applyAction, createCart, joinCart, toPublicCart, type RuleResult, type StoredCart } from "../src/server/cart/rules";
+import {
+  applyAction,
+  createCart,
+  joinCart,
+  toPublicCart,
+  type RuleResult,
+  type StoredCart,
+} from "../src/server/cart/rules";
 import { RESTAURANTS } from "../src/shared/menus";
 import { computeTotals, normalizeSelections, unitPriceCents } from "../src/shared/pricing";
 
@@ -11,13 +18,25 @@ function unwrap(result: RuleResult): StoredCart {
 }
 
 function setup() {
-  const cart = createCart({ id: "ABC234", restaurantId: "chick-fil-a", hostName: "Jordan", token: "host-token", now: NOW });
+  const cart = createCart({
+    id: "ABC234",
+    restaurantId: "chick-fil-a",
+    hostName: "Jordan",
+    token: "host-token",
+    now: NOW,
+  });
   const joined = joinCart(cart, "guest-token", "Alex", NOW + 1);
   if (!joined.ok) throw new Error(joined.error);
   return { cart: joined.cart, hostId: cart.hostId, guestId: joined.participantId };
 }
 
-const add = (menuItemId: string, quantity = 1, selections = {}) => ({ type: "addItem" as const, menuItemId, quantity, selections, note: "" });
+const add = (menuItemId: string, quantity = 1, selections = {}) => ({
+  type: "addItem" as const,
+  menuItemId,
+  quantity,
+  selections,
+  note: "",
+});
 
 describe("createCart / joinCart", () => {
   it("creates an open cart with the host as its only participant", () => {
@@ -92,7 +111,9 @@ describe("applyAction", () => {
     const withItem = unwrap(applyAction(cart, guestId, add("lemonade"), NOW));
     const lineId = withItem.items[0]!.id;
     expect(applyAction(withItem, hostId, { type: "updateItem", lineId, quantity: 3 }, NOW).ok).toBe(false);
-    const updated = unwrap(applyAction(withItem, guestId, { type: "updateItem", lineId, quantity: 3, selections: { size: ["large"] } }, NOW));
+    const updated = unwrap(
+      applyAction(withItem, guestId, { type: "updateItem", lineId, quantity: 3, selections: { size: ["large"] } }, NOW),
+    );
     expect(updated.items[0]).toMatchObject({ quantity: 3, unitPriceCents: 239 + 90 });
   });
 
@@ -117,7 +138,8 @@ describe("applyAction", () => {
   });
 
   it("caps the activity feed", () => {
-    let { cart, guestId } = setup();
+    const { cart: initial, guestId } = setup();
+    let cart = initial;
     for (let i = 0; i < 40; i++) cart = unwrap(applyAction(cart, guestId, add("cookie"), NOW));
     expect(cart.activity).toHaveLength(30);
     expect(cart.version).toBe(42);
@@ -134,7 +156,10 @@ describe("pricing", () => {
   });
 
   it("computes Provo tax on the subtotal", () => {
-    const totals = computeTotals([{ unitPriceCents: 1000, quantity: 2 }, { unitPriceCents: 549, quantity: 1 }]);
+    const totals = computeTotals([
+      { unitPriceCents: 1000, quantity: 2 },
+      { unitPriceCents: 549, quantity: 1 },
+    ]);
     expect(totals).toEqual({ subtotalCents: 2549, taxCents: 215, totalCents: 2764 });
   });
 

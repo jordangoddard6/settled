@@ -22,8 +22,7 @@ export interface StoredCart extends Cart {
 }
 
 export type RuleResult =
-  | { ok: true; cart: StoredCart; activity: ActivityEntry; participantId: string }
-  | { ok: false; error: string };
+  { ok: true; cart: StoredCart; activity: ActivityEntry; participantId: string } | { ok: false; error: string };
 
 const fail = (error: string): RuleResult => ({ ok: false, error });
 
@@ -65,7 +64,14 @@ export function createCart(opts: {
     hostId: host.id,
     participants: [host],
     items: [],
-    activity: [{ id: randomUUID(), at: opts.now, actorId: host.id, text: `${host.name} started a ${RESTAURANTS[opts.restaurantId].name} order` }],
+    activity: [
+      {
+        id: randomUUID(),
+        at: opts.now,
+        actorId: host.id,
+        text: `${host.name} started a ${RESTAURANTS[opts.restaurantId].name} order`,
+      },
+    ],
     checkoutStartedAt: null,
     order: null,
     tokens: { [opts.token]: host.id },
@@ -76,7 +82,13 @@ export function createCart(opts: {
 }
 
 /** Returns a copy of `cart` with the change recorded: version + 1, timestamp, activity entry. */
-function commit(cart: StoredCart, actorId: string, text: string, now: number, change: (draft: StoredCart) => void): RuleResult {
+function commit(
+  cart: StoredCart,
+  actorId: string,
+  text: string,
+  now: number,
+  change: (draft: StoredCart) => void,
+): RuleResult {
   const draft = structuredClone(cart);
   change(draft);
   const activity: ActivityEntry = { id: randomUUID(), at: now, actorId, text };
@@ -106,7 +118,11 @@ export function applyAction(cart: StoredCart, actorId: string, action: CartActio
   const actor = cart.participants.find((p) => p.id === actorId);
   if (!actor) return fail("Join the cart first.");
   if (cart.status !== "open") {
-    return fail(cart.status === "locked" ? "The host is checking out — the cart is locked." : "This order has already been placed.");
+    return fail(
+      cart.status === "locked"
+        ? "The host is checking out — the cart is locked."
+        : "This order has already been placed.",
+    );
   }
 
   switch (action.type) {
@@ -145,7 +161,8 @@ export function applyAction(cart: StoredCart, actorId: string, action: CartActio
 
       const next: LineItem = { ...line };
       if (action.quantity !== undefined) {
-        if (!validQuantity(action.quantity)) return fail(`Quantity must be ${LIMITS.quantityMin}–${LIMITS.quantityMax}.`);
+        if (!validQuantity(action.quantity))
+          return fail(`Quantity must be ${LIMITS.quantityMin}–${LIMITS.quantityMax}.`);
         next.quantity = action.quantity;
       }
       if (action.note !== undefined) {
@@ -160,7 +177,10 @@ export function applyAction(cart: StoredCart, actorId: string, action: CartActio
         next.unitPriceCents = unitPriceCents(item, normalized.selections);
       }
       const text =
-        action.quantity !== undefined && action.quantity !== line.quantity && action.selections === undefined && action.note === undefined
+        action.quantity !== undefined &&
+        action.quantity !== line.quantity &&
+        action.selections === undefined &&
+        action.note === undefined
           ? `${actor.name} changed ${item.name} to ${next.quantity}×`
           : `${actor.name} updated ${item.name}`;
       return commit(cart, actor.id, text, now, (draft) => {
@@ -175,7 +195,9 @@ export function applyAction(cart: StoredCart, actorId: string, action: CartActio
       if (!isOwner && !actor.isHost) return fail("You can only remove your own items.");
       const itemName = findMenuItem(cart.restaurantId, line.menuItemId)?.name ?? "an item";
       const ownerName = cart.participants.find((p) => p.id === line.ownerId)?.name ?? "someone";
-      const text = isOwner ? `${actor.name} removed ${itemName}` : `${actor.name} (host) removed ${ownerName}'s ${itemName}`;
+      const text = isOwner
+        ? `${actor.name} removed ${itemName}`
+        : `${actor.name} (host) removed ${ownerName}'s ${itemName}`;
       return commit(cart, actor.id, text, now, (draft) => {
         draft.items = draft.items.filter((l) => l.id !== line.id);
       });
@@ -197,7 +219,8 @@ function requireHost(cart: StoredCart, actorId: string): Participant | string {
 export function startCheckout(cart: StoredCart, actorId: string, now: number): RuleResult {
   const host = requireHost(cart, actorId);
   if (typeof host === "string") return fail(host);
-  if (cart.status !== "open") return fail(cart.status === "locked" ? "Checkout is already in progress." : "This order has already been placed.");
+  if (cart.status !== "open")
+    return fail(cart.status === "locked" ? "Checkout is already in progress." : "This order has already been placed.");
   if (cart.items.length === 0) return fail("Add at least one item before checking out.");
   return commit(cart, host.id, `${host.name} is checking out — the cart is locked`, now, (draft) => {
     draft.status = "locked";
@@ -219,7 +242,8 @@ export function cancelCheckout(cart: StoredCart, actorId: string, now: number): 
 
 /** Marks a locked cart as ordered. Only call after the payment is verified with Stripe. */
 export function placeOrder(cart: StoredCart, now: number): RuleResult {
-  if (cart.status !== "locked") return fail(cart.status === "ordered" ? "This order has already been placed." : "Checkout isn't in progress.");
+  if (cart.status !== "locked")
+    return fail(cart.status === "ordered" ? "This order has already been placed." : "Checkout isn't in progress.");
   const totals = computeTotals(cart.items);
   return commit(cart, cart.hostId, `Order sent to ${RESTAURANTS[cart.restaurantId].name} 🎉`, now, (draft) => {
     draft.status = "ordered";

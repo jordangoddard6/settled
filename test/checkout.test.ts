@@ -10,21 +10,21 @@ class FakeStripe implements PaymentGateway {
   failCreate = false;
   private n = 0;
 
-  async createIntent({ amountCents }: { amountCents: number }) {
-    if (this.failCreate) throw new Error("Stripe is down");
+  createIntent({ amountCents }: { amountCents: number }): Promise<IntentInfo> {
+    if (this.failCreate) return Promise.reject(new Error("Stripe is down"));
     const id = `pi_${++this.n}`;
     const intent = { id, clientSecret: `${id}_secret`, amountCents, status: "requires_payment_method" };
     this.intents.set(id, intent);
-    return { ...intent };
+    return Promise.resolve({ ...intent });
   }
-  async retrieveIntent(id: string) {
+  retrieveIntent(id: string): Promise<IntentInfo> {
     const intent = this.intents.get(id);
-    if (!intent) throw new Error("No such intent");
-    return { ...intent };
+    return intent ? Promise.resolve({ ...intent }) : Promise.reject(new Error("No such intent"));
   }
-  async cancelIntent(id: string) {
+  cancelIntent(id: string): Promise<void> {
     const intent = this.intents.get(id);
     if (intent) intent.status = "canceled";
+    return Promise.resolve();
   }
   pay(id: string, amountCents?: number) {
     const intent = this.intents.get(id)!;
@@ -76,12 +76,18 @@ describe("checkout", () => {
 
   it("only the host can check out", async () => {
     const { guest } = await cartWithItems();
-    expect(await guest.socket.emitWithAck("checkout:start", {})).toEqual({ ok: false, error: "Only the host can check out." });
+    expect(await guest.socket.emitWithAck("checkout:start", {})).toEqual({
+      ok: false,
+      error: "Only the host can check out.",
+    });
   });
 
   it("refuses to check out an empty cart", async () => {
     const { host } = await server.newCart();
-    expect(await host.socket.emitWithAck("checkout:start", {})).toMatchObject({ ok: false, error: expect.stringMatching(/at least one item/) });
+    expect(await host.socket.emitWithAck("checkout:start", {})).toMatchObject({
+      ok: false,
+      error: expect.stringMatching(/at least one item/),
+    });
   });
 
   it("does not place the order until Stripe says the payment succeeded", async () => {
@@ -104,7 +110,10 @@ describe("checkout", () => {
     const session = await host.socket.emitWithAck("checkout:start", {});
     if (!session.ok) throw new Error(session.error);
     stripe.pay(session.clientSecret.replace("_secret", ""), 50);
-    expect(await host.socket.emitWithAck("checkout:complete", {})).toMatchObject({ ok: false, error: expect.stringMatching(/didn't match/) });
+    expect(await host.socket.emitWithAck("checkout:complete", {})).toMatchObject({
+      ok: false,
+      error: expect.stringMatching(/didn't match/),
+    });
   });
 
   it("cancel unlocks the cart and cancels the payment", async () => {
@@ -139,7 +148,10 @@ describe("checkout", () => {
   it("unlocks the cart if Stripe can't be reached", async () => {
     const { host, guest } = await cartWithItems();
     stripe.failCreate = true;
-    expect(await host.socket.emitWithAck("checkout:start", {})).toMatchObject({ ok: false, error: expect.stringMatching(/unlocked/) });
+    expect(await host.socket.emitWithAck("checkout:start", {})).toMatchObject({
+      ok: false,
+      error: expect.stringMatching(/unlocked/),
+    });
     await waitFor(() => guest.cart?.status === "open");
   });
 });
@@ -150,7 +162,10 @@ describe("checkout without Stripe keys", () => {
     try {
       const { host } = await server.newCart();
       await host.act(cookie);
-      expect(await host.socket.emitWithAck("checkout:start", {})).toMatchObject({ ok: false, error: expect.stringMatching(/Stripe/) });
+      expect(await host.socket.emitWithAck("checkout:start", {})).toMatchObject({
+        ok: false,
+        error: expect.stringMatching(/Stripe/),
+      });
       expect(await (await fetch(`${server.url}/api/config`)).json()).toEqual({ stripePublishableKey: null });
     } finally {
       await server.close();

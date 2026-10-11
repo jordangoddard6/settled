@@ -38,7 +38,12 @@ export function MenuPanel({ restaurant, disabledReason, act, onError }: Props) {
   );
 }
 
-function MenuRow({ item, disabled, act, onError }: { item: MenuItem; disabled: boolean } & Pick<Props, "act" | "onError">) {
+function MenuRow({
+  item,
+  disabled,
+  act,
+  onError,
+}: { item: MenuItem; disabled: boolean } & Pick<Props, "act" | "onError">) {
   const [pending, setPending] = useState(false);
 
   async function add() {
@@ -71,5 +76,10 @@ function MenuRow({ item, disabled, act, onError }: { item: MenuItem; disabled: b
 }
 
 export function Spinner() {
-  return <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent align-middle" aria-label="Working" />;
+  return (
+    <span
+      className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent align-middle"
+      aria-label="Working"
+    />
+  );
 }

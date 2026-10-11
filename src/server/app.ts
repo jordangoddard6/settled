@@ -38,7 +38,8 @@ export function createApp(store: CartStore, payments: Payments | null): App {
   app.post("/api/carts", async (req, res) => {
     const send = (status: number, body: CreateCartResponse) => res.status(status).json(body);
     const parsed = createCartSchema.safeParse(req.body);
-    if (!parsed.success || !isRestaurantId(parsed.data.restaurantId)) return send(400, { ok: false, error: "Invalid request." });
+    if (!parsed.success || !isRestaurantId(parsed.data.restaurantId))
+      return send(400, { ok: false, error: "Invalid request." });
     const name = cleanName(parsed.data.name);
     if (!name) return send(400, { ok: false, error: "Please enter your name (up to 30 characters)." });
     const cart = await service.create(parsed.data.restaurantId, name, parsed.data.token);

@@ -21,8 +21,20 @@ const selectionsSchema = z.record(z.string(), z.array(z.string()).max(20));
 const openSchema = z.object({ cartId: z.string().min(1).max(20), token: z.string().min(8).max(100) });
 const joinSchema = z.object({ name: z.string() });
 const actionSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("addItem"), menuItemId: z.string(), quantity: z.number(), selections: selectionsSchema, note: z.string() }),
-  z.object({ type: z.literal("updateItem"), lineId: z.string(), quantity: z.number().optional(), selections: selectionsSchema.optional(), note: z.string().optional() }),
+  z.object({
+    type: z.literal("addItem"),
+    menuItemId: z.string(),
+    quantity: z.number(),
+    selections: selectionsSchema,
+    note: z.string(),
+  }),
+  z.object({
+    type: z.literal("updateItem"),
+    lineId: z.string(),
+    quantity: z.number().optional(),
+    selections: selectionsSchema.optional(),
+    note: z.string().optional(),
+  }),
   z.object({ type: z.literal("removeItem"), lineId: z.string() }),
 ]);
 
@@ -83,7 +95,8 @@ export function registerSocketHandlers(io: IO, service: CartService, payments: P
       if (!cart) {
         return ack({
           ok: false,
-          error: "We couldn't find that cart. Check the code — or, since carts in this demo are temporary and clear when the server restarts, start a new order.",
+          error:
+            "We couldn't find that cart. Check the code — or, since carts in this demo are temporary and clear when the server restarts, start a new order.",
         });
       }
 
@@ -146,9 +159,18 @@ export function registerSocketHandlers(io: IO, service: CartService, payments: P
         }
       };
 
-    socket.on("checkout:start", checkoutHandler((cartId, id) => checkout.start(cartId, id)));
-    socket.on("checkout:cancel", checkoutHandler((cartId, id) => checkout.cancel(cartId, id)));
-    socket.on("checkout:complete", checkoutHandler((cartId, id) => checkout.complete(cartId, id)));
+    socket.on(
+      "checkout:start",
+      checkoutHandler((cartId, id) => checkout.start(cartId, id)),
+    );
+    socket.on(
+      "checkout:cancel",
+      checkoutHandler((cartId, id) => checkout.cancel(cartId, id)),
+    );
+    socket.on(
+      "checkout:complete",
+      checkoutHandler((cartId, id) => checkout.complete(cartId, id)),
+    );
 
     socket.on("disconnect", () => leaveCurrentCart(socket));
   });

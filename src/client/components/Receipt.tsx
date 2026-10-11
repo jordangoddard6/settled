@@ -17,7 +17,9 @@ export function OrderPlacedBanner({ cart, restaurant }: { cart: Cart; restaurant
         {cart.participants.length === 1 ? "person" : "people"}
         {time && <> at {time}</>}.
       </p>
-      <p className="mt-3 text-xs text-stone-400">Demo only — no order was actually sent to the restaurant, and no real card was charged.</p>
+      <p className="mt-3 text-xs text-stone-400">
+        Demo only — no order was actually sent to the restaurant, and no real card was charged.
+      </p>
     </section>
   );
 }
